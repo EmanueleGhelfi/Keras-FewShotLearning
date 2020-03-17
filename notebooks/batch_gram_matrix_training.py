@@ -86,9 +86,7 @@ preprocessing = compose(
 )
 
 train_val_test_split = {
-    day: key
-    for key, days in yaml.safe_load(open("data/annotations/train_val_test_split.yaml")).items()
-    for day in days
+    day: key for key, days in yaml.safe_load(open("data/annotations/train_val_test_split.yaml")).items() for day in days
 }
 all_annotations = (
     pd.read_csv("data/annotations/cropped_images.csv")
@@ -109,15 +107,8 @@ siamese_nets.get_layer("branch_model").trainable = False
 optimizer = Adam(lr=1e-4)
 margin = 0.05
 batch_size = 64
-datasets = (
-    all_annotations
-    .groupby('split')
-    .apply(lambda group: (
-        group
-        .pipe(ToKShotDataset(k_shot=8, preprocessing=preprocessing))
-        .batch(batch_size)
-        .repeat()
-    ))
+datasets = all_annotations.groupby("split").apply(
+    lambda group: (group.pipe(ToKShotDataset(k_shot=8, preprocessing=preprocessing)).batch(batch_size).repeat())
 )
 model.compile(
     optimizer=optimizer,
@@ -125,10 +116,10 @@ model.compile(
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
-    datasets['train'],
-    steps_per_epoch=all_annotations.split.value_counts()['train'] // batch_size,
-    validation_data=datasets['val'],
-    validation_steps=all_annotations.split.value_counts()['val'] // batch_size,
+    datasets["train"],
+    steps_per_epoch=all_annotations.split.value_counts()["train"] // batch_size,
+    validation_data=datasets["val"],
+    validation_steps=all_annotations.split.value_counts()["val"] // batch_size,
     initial_epoch=0,
     epochs=5,
     callbacks=callbacks,
@@ -142,10 +133,10 @@ model.compile(
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
-    datasets['train'],
-    steps_per_epoch=all_annotations.split.value_counts()['train'] // batch_size,
-    validation_data=datasets['val'],
-    validation_steps=all_annotations.split.value_counts()['val'] // batch_size,
+    datasets["train"],
+    steps_per_epoch=all_annotations.split.value_counts()["train"] // batch_size,
+    validation_data=datasets["val"],
+    validation_steps=all_annotations.split.value_counts()["val"] // batch_size,
     initial_epoch=5,
     epochs=20,
     callbacks=callbacks,
@@ -159,12 +150,12 @@ k_shot = 1
 n_way = 5
 n_episode = 100
 test_dataset = (
-    tf.data.Dataset.from_tensor_slices(test_set.to_dict('list'))
-    .map(lambda annotation: tf.io.decode_and_crop_jpeg(
-        contents=tf.io.read_file(annotation['image_name']),
-        crop_window=annotation['crop_window'],
-        channels=3,
-    ))
+    tf.data.Dataset.from_tensor_slices(test_set.to_dict("list"))
+    .map(
+        lambda annotation: tf.io.decode_and_crop_jpeg(
+            contents=tf.io.read_file(annotation["image_name"]), crop_window=annotation["crop_window"], channels=3,
+        )
+    )
     .map(preprocessing)
     .batch(64)
 )
@@ -175,17 +166,14 @@ scores = []
 for _ in range(n_episode):
     selected_labels = np.random.choice(test_set.label.unique(), size=n_way, replace=True)
     support_set = (
-        test_set
-        .loc[lambda df: df.label.isin(selected_labels)]
+        test_set.loc[lambda df: df.label.isin(selected_labels)]
         .groupby("label")
         .apply(lambda group: group.sample(k_shot))
         .reset_index("label", drop=True)
     )
-    query_set = (
-        test_set
-        .loc[lambda df: df.label.isin(selected_labels)]
-        .loc[lambda df: ~df.index.isin(support_set.index)]
-    )
+    query_set = test_set.loc[lambda df: df.label.isin(selected_labels)].loc[
+        lambda df: ~df.index.isin(support_set.index)
+    ]
     support_set_embeddings = embeddings[support_set.index]
     query_set_embeddings = embeddings[query_set.index]
     test_sequence = ProductSequence(

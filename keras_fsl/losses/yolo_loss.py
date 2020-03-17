@@ -24,12 +24,13 @@ def yolo_loss(anchors, threshold):
 
         for image, pred in zip(y_true, y_pred):
             loss_objectness.assign_add(
-                tf.math.reduce_sum(tf.keras.backend.binary_crossentropy(tf.zeros_like(y_pred[..., 4]), y_pred[..., 4])))
+                tf.math.reduce_sum(tf.keras.backend.binary_crossentropy(tf.zeros_like(y_pred[..., 4]), y_pred[..., 4]))
+            )
             for box in image:
                 if box[4] < 1:
                     continue
-                height_width_min = tf.minimum(box[2:4], anchors[['height', 'width']].values)
-                height_width_max = tf.maximum(box[2:4], anchors[['height', 'width']].values)
+                height_width_min = tf.minimum(box[2:4], anchors[["height", "width"]].values)
+                height_width_max = tf.maximum(box[2:4], anchors[["height", "width"]].values)
                 intersection = tf.reduce_prod(height_width_min, axis=-1)
                 union = tf.reduce_prod(height_width_max, axis=-1)
                 iou = intersection / union
@@ -46,7 +47,9 @@ def yolo_loss(anchors, threshold):
                         loss_objectness.assign_add(tf.keras.backend.binary_crossentropy(box[4], selected_pred[4]))
                         loss_coordinates.assign_add(tf.norm(box[:2] - selected_pred[:2], ord=2))
                         loss_box.assign_add(tf.norm(box[2:4] - selected_pred[2:4], ord=2))
-                        loss_classes.assign_add(tf.reduce_sum(tf.keras.backend.binary_crossentropy(box[5:], selected_pred[5:-1])))
+                        loss_classes.assign_add(
+                            tf.reduce_sum(tf.keras.backend.binary_crossentropy(box[5:], selected_pred[5:-1]))
+                        )
 
         return loss_coordinates + loss_box + loss_objectness + loss_classes
 

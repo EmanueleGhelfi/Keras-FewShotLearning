@@ -27,8 +27,13 @@ def YoloCoordinates():
     Activation function for the box center coordinates regression. Coordinates are relative to the image dimension, ie. between 0
         and 1
     """
-    return Sequential([
-        Activation('sigmoid'),
-        Lambda(lambda input_: input_ + tf.cast(tf.expand_dims(build_grid_coordinates(tf.shape(input_)[1:3]), 0), input_.dtype)),
-        Lambda(lambda input_: input_ / tf.cast(tf.shape(input_)[1:3], input_.dtype)),
-    ])
+    return Sequential(
+        [
+            Activation("sigmoid"),
+            Lambda(
+                lambda input_: input_
+                + tf.cast(tf.expand_dims(build_grid_coordinates(tf.shape(input_)[1:3]), 0), input_.dtype)
+            ),
+            Lambda(lambda input_: input_ / tf.cast(tf.shape(input_)[1:3], input_.dtype)),
+        ]
+    )

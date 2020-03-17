@@ -15,9 +15,13 @@ def YoloBox(anchor):
         anchor (Union[pandas.Series, collections.namedtuple]): with key width and height. Note that given a tensor with shape
             (batch_size, i, j, channels), i is related to height and j to width
   """
-    return Sequential([
-        Activation('exponential'),
-        Lambda(lambda input_, anchor_=anchor: (
-            input_ * tf.convert_to_tensor([anchor_.height, anchor_.width], dtype=tf.float32)
-        )),
-    ])
+    return Sequential(
+        [
+            Activation("exponential"),
+            Lambda(
+                lambda input_, anchor_=anchor: (
+                    input_ * tf.convert_to_tensor([anchor_.height, anchor_.width], dtype=tf.float32)
+                )
+            ),
+        ]
+    )
